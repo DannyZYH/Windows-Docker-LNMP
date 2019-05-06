@@ -13,8 +13,9 @@ services:
       - .\log\php-fpm\:/var/log/php-fpm/
     environment:
       - TZ=Asia/Shanghai
-    links:
-      - "mysql"
+    depends_on:
+      - mysql
+      - redis
     networks:
       - lnmp
 
@@ -51,6 +52,32 @@ services:
       MYSQL_ROOT_PASSWORD: "root"
     networks:
       - lnmp
+    
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - lnmp
 
+  portainer:
+    image: portainer/portainer:latest
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - ./portainer/:/data:cached
+    networks:
+      - lnmp
+
+  phpredisadmin:
+    image: erikdubbelboer/phpredisadmin:latest
+    ports:
+      - "8000:80"
+    networks:
+      - lnmp
+    environment:
+      - REDIS_1_HOST=redis
+      - REDIS_1_PORT=6379
 networks:
   lnmp:
