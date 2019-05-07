@@ -1,0 +1,83 @@
+version: '3'
+
+services:
+
+  php:
+    build: .\php
+    expose:
+      - "9000"
+    volumes:
+      - .\html\:/var/www/html/
+      - .\conf\php\php.ini:/usr/local/etc/php/php.ini
+      - .\conf\php\php-fpm.d\www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - .\log\php-fpm\:/var/log/php-fpm/
+    environment:
+      - TZ=Asia/Shanghai
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - lnmp
+
+  nginx:
+    build: .\nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - php:fpm72
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\html\:/var/www/html/
+      - .\conf\nginx\conf.d:/etc/nginx/conf.d/
+      - .\conf\nginx\nginx.conf:/etc/nginx/nginx.conf
+      - .\log\nginx\:/var/log/nginx/
+    networks:
+      - lnmp
+
+
+  mysql:
+    image: mysql:5.6
+    ports:
+      - "3306:3306"
+    volumes:
+      - .\mysql\:/var/lib/mysql/
+      - .\conf\mysql\my.cnf:/etc/mysql/my.cnf
+      - .\log\mysql\:/var/log/mysql/
+    environment:
+      MYSQL_USER: "root"
+      MYSQL_PASSWORD: "root"
+      MYSQL_ROOT_PASSWORD: "root"
+    networks:
+      - lnmp
+    
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - lnmp
+
+  portainer:
+    image: portainer/portainer:latest
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - ./portainer/:/data:cached
+    networks:
+      - lnmp
+
+  phpredisadmin:
+    image: erikdubbelboer/phpredisadmin:latest
+    ports:
+      - "8000:80"
+    networks:
+      - lnmp
+    environment:
+      - REDIS_1_HOST=redis
+      - REDIS_1_PORT=6379
+networks:
+  lnmp:
